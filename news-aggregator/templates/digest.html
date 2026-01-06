@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}Digest for {{ digest.date|format_date }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .digest-header {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .digest-date {
+        color: #666;
+        font-size: 1.1em;
+        margin-bottom: 15px;
+    }
+
+    .digest-summary {
+        font-size: 1.2em;
+        line-height: 1.8;
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    .market-data {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 20px;
+    }
+
+    .market-data h3 {
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .market-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .market-item {
+        background: white;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 4px solid #007bff;
+    }
+
+    .market-item.positive {
+        border-left-color: #28a745;
+    }
+
+    .market-item.negative {
+        border-left-color: #dc3545;
+    }
+
+    .market-label {
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 5px;
+    }
+
+    .market-value {
+        font-size: 1.3em;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .market-change {
+        font-size: 0.9em;
+        margin-top: 5px;
+    }
+
+    .market-change.positive {
+        color: #28a745;
+    }
+
+    .market-change.negative {
+        color: #dc3545;
+    }
+
+    .articles-section {
+        margin-top: 30px;
+    }
+
+    .article {
+        background: white;
+        padding: 25px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .article-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+    }
+
+    .article-category {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 3px;
+        font-size: 0.85em;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .category-cold_open {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .category-macro_shift {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .category-signal_check {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .importance-score {
+        font-size: 1.5em;
+        font-weight: 700;
+        color: #007bff;
+    }
+
+    .article-title {
+        font-size: 1.5em;
+        margin: 10px 0;
+        color: #1a1a1a;
+    }
+
+    .article-title a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .article-title a:hover {
+        color: #007bff;
+    }
+
+    .article-source {
+        color: #666;
+        font-size: 0.9em;
+        margin-bottom: 15px;
+    }
+
+    .article-section {
+        margin: 15px 0;
+    }
+
+    .article-section h4 {
+        color: #555;
+        font-size: 1em;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+
+    .key-data-points {
+        list-style: none;
+        padding: 0;
+    }
+
+    .key-data-points li {
+        padding: 8px 12px;
+        background: #f8f9fa;
+        margin-bottom: 5px;
+        border-radius: 3px;
+        border-left: 3px solid #007bff;
+    }
+
+    .market-impact-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .impact-item {
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 5px;
+    }
+
+    .impact-label {
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 5px;
+        text-transform: capitalize;
+    }
+
+    .impact-text {
+        color: #333;
+        font-size: 0.95em;
+    }
+
+    .why-matters {
+        background: #fff8e1;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 4px solid #ffc107;
+    }
+
+    .hook-potential {
+        background: #e8f5e9;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 4px solid #4caf50;
+        font-style: italic;
+    }
+
+    .generate-btn {
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if is_latest %}
+<div class="generate-btn">
+    <button class="btn btn-success" onclick="generateDigest()">🔄 Generate New Digest</button>
+    <span id="generate-status"></span>
+</div>
+{% endif %}
+
+<div class="digest-header">
+    <div class="digest-date">{{ digest.date|format_date }}</div>
+    <div class="digest-summary">{{ digest.summary }}</div>
+
+    {% if digest.market_data %}
+    <div class="market-data">
+        <h3>Market Snapshot</h3>
+        <div class="market-grid">
+            {% if digest.market_data.stocks %}
+                {% for name, data in digest.market_data.stocks.items() %}
+                <div class="market-item {% if data.change > 0 %}positive{% elif data.change < 0 %}negative{% endif %}">
+                    <div class="market-label">{{ name }}</div>
+                    <div class="market-value">{{ data.value }}</div>
+                    <div class="market-change {% if data.change > 0 %}positive{% elif data.change < 0 %}negative{% endif %}">
+                        {{ "+" if data.change > 0 else "" }}{{ data.change }}%
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            {% if digest.market_data.gold %}
+            <div class="market-item {% if digest.market_data.gold.change > 0 %}positive{% elif digest.market_data.gold.change < 0 %}negative{% endif %}">
+                <div class="market-label">Gold</div>
+                <div class="market-value">${{ digest.market_data.gold.value }}</div>
+                <div class="market-change {% if digest.market_data.gold.change > 0 %}positive{% elif digest.market_data.gold.change < 0 %}negative{% endif %}">
+                    {{ "+" if digest.market_data.gold.change > 0 else "" }}{{ digest.market_data.gold.change }}%
+                </div>
+            </div>
+            {% endif %}
+
+            {% if digest.market_data.treasuries %}
+                {% for name, data in digest.market_data.treasuries.items() %}
+                <div class="market-item">
+                    <div class="market-label">{{ name }}</div>
+                    <div class="market-value">{{ data.value }}%</div>
+                    <div class="market-change {% if data.change > 0 %}positive{% elif data.change < 0 %}negative{% endif %}">
+                        {{ "+" if data.change > 0 else "" }}{{ data.change }}
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="articles-section">
+    <h2>Top Stories</h2>
+
+    {% for article in digest.articles %}
+    <div class="article">
+        <div class="article-header">
+            <div>
+                <span class="article-category category-{{ article.category }}">{{ article.category|replace('_', ' ') }}</span>
+            </div>
+            <div class="importance-score">{{ article.importance_score }}/10</div>
+        </div>
+
+        <h3 class="article-title">
+            <a href="{{ article.link }}" target="_blank">{{ article.title }}</a>
+        </h3>
+
+        <div class="article-source">Source: {{ article.source }}</div>
+
+        {% if article.hook_potential %}
+        <div class="article-section">
+            <div class="hook-potential">
+                💡 Hook Potential: {{ article.hook_potential }}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if article.key_data_points %}
+        <div class="article-section">
+            <h4>📊 Key Data Points</h4>
+            <ul class="key-data-points">
+                {% for point in article.key_data_points %}
+                <li>{{ point }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if article.market_impact %}
+        <div class="article-section">
+            <h4>📈 Market Impact Analysis</h4>
+            <div class="market-impact-grid">
+                {% for category, impact in article.market_impact.items() %}
+                <div class="impact-item">
+                    <div class="impact-label">{{ category }}</div>
+                    <div class="impact-text">{{ impact }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if article.why_it_matters %}
+        <div class="article-section">
+            <div class="why-matters">
+                <strong>Why It Matters:</strong> {{ article.why_it_matters }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function generateDigest() {
+    const btn = document.querySelector('.btn-success');
+    const status = document.getElementById('generate-status');
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Generating...';
+    status.textContent = 'This may take 30-60 seconds...';
+
+    fetch('/generate', {
+        method: 'POST',
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            status.textContent = '✅ Success! Reloading...';
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            status.textContent = '❌ Error: ' + data.error;
+            btn.disabled = false;
+            btn.textContent = '🔄 Generate New Digest';
+        }
+    })
+    .catch(error => {
+        status.textContent = '❌ Error: ' + error.message;
+        btn.disabled = false;
+        btn.textContent = '🔄 Generate New Digest';
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Digest History{% endblock %}
+
+{% block extra_css %}
+<style>
+    .history-list {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .history-item {
+        padding: 20px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s;
+    }
+
+    .history-item:hover {
+        background: #f8f9fa;
+    }
+
+    .history-item:last-child {
+        border-bottom: none;
+    }
+
+    .history-date {
+        font-size: 1.2em;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .history-summary {
+        color: #666;
+        margin-top: 5px;
+        font-size: 0.95em;
+    }
+
+    .history-meta {
+        text-align: right;
+        color: #999;
+        font-size: 0.9em;
+    }
+
+    .article-count {
+        display: inline-block;
+        background: #007bff;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        margin-top: 5px;
+    }
+
+    .view-btn {
+        margin-top: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Digest History</h1>
+<p style="color: #666; margin-bottom: 30px;">Browse all past digests</p>
+
+{% if digests %}
+<div class="history-list">
+    {% for digest in digests %}
+    <div class="history-item">
+        <div>
+            <div class="history-date">{{ digest.date|format_date }}</div>
+            <div class="history-summary">{{ digest.summary[:150] }}{% if digest.summary|length > 150 %}...{% endif %}</div>
+            <a href="/digest/{{ digest.date }}" class="btn view-btn">View Digest</a>
+        </div>
+        <div class="history-meta">
+            <div>{{ digest.created_at|format_datetime }}</div>
+            <div class="article-count">{{ digest.article_count }} stories</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">
+    No digests found. Generate your first digest from the home page!
+</div>
+{% endif %}
+{% endblock %}

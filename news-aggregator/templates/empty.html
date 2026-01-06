@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="alert alert-info">
+    <h2>No Digest Available</h2>
+    <p>There are no digests yet. Click the button below to generate your first daily digest!</p>
+</div>
+
+<button class="btn btn-success" onclick="generateDigest()">🔄 Generate First Digest</button>
+<div id="generate-status" style="margin-top: 15px;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function generateDigest() {
+    const btn = document.querySelector('.btn-success');
+    const status = document.getElementById('generate-status');
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Generating...';
+    status.textContent = 'This may take 30-60 seconds...';
+    status.className = 'alert alert-info';
+
+    fetch('/generate', {
+        method: 'POST',
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            status.textContent = '✅ Success! Reloading...';
+            status.className = 'alert alert-success';
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            status.textContent = '❌ Error: ' + data.error;
+            status.className = 'alert alert-danger';
+            btn.disabled = false;
+            btn.textContent = '🔄 Generate First Digest';
+        }
+    })
+    .catch(error => {
+        status.textContent = '❌ Error: ' + error.message;
+        status.className = 'alert alert-danger';
+        btn.disabled = false;
+        btn.textContent = '🔄 Generate First Digest';
+    });
+}
+</script>
+{% endblock %}
